@@ -1,8 +1,8 @@
-package com.example.miko.data.remote.completions
+package com.example.miko.data.remote
 
 import com.google.gson.annotations.SerializedName
 
-data class MessagesDto(
+data class MessageBody(
     @SerializedName("role")
     val role: String,
     @SerializedName("content")

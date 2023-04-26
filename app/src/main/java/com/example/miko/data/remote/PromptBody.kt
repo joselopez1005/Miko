@@ -6,5 +6,5 @@ data class PromptBody(
     @SerializedName("model")
     val model: String,
     @SerializedName("prompt")
-    val messages: List<String>,
+    val messages: List<MessageBody>,
 )

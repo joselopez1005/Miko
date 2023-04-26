@@ -5,7 +5,9 @@ import com.example.miko.domain.chat.Completions
 import com.example.miko.domain.chat.Message
 
 fun CompletionsDto.toCompletions(): Completions {
-    return Completions(message.map {
-        Message(it.role, it.content)
-    })
+    val list = mutableListOf<Message>()
+    choices.forEach {
+        list.add(Message(it.message.role, it.message.content))
+    }
+    return Completions(list)
 }

@@ -1,4 +1,8 @@
+package com.example.miko.data.repository
+
+import com.example.miko.BuildConfig
 import com.example.miko.data.mappers.toCompletions
+import com.example.miko.data.remote.MessageBody
 import com.example.miko.data.remote.OpenApi
 import com.example.miko.data.remote.PromptBody
 import com.example.miko.domain.chat.Completions
@@ -18,7 +22,8 @@ class ChatRepositoryImpl @Inject constructor(
         return try {
             Resource.Success(
                 openApi.getTextCompletion(
-                    PromptBody(model, listOf(role, content))
+                    "Bearer ${BuildConfig.OPEN_API_KEY}",
+                    PromptBody(model, listOf(MessageBody(role,content)))
                 ).toCompletions()
             )
         } catch (e: Exception) {
