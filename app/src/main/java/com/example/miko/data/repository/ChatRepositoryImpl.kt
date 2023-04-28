@@ -23,7 +23,7 @@ class ChatRepositoryImpl @Inject constructor(
             Resource.Success(
                 openApi.getTextCompletion(
                     "Bearer ${BuildConfig.OPEN_API_KEY}",
-                    PromptBody(model, listOf(MessageBody(role,content)))
+                    PromptBody(model, listOf(MessageBody(role,content)), 3)
                 ).toCompletions()
             )
         } catch (e: Exception) {
