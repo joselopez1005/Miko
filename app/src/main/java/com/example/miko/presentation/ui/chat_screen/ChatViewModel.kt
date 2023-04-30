@@ -25,7 +25,7 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             savedStateHandle[STATE] = ChatScreenStates(completions = null, isLoading = true)
 
-            when (val result = chatRepository.sendMessageData(model = MODEL, role = USER, content = message ?: "")) {
+            when (val result = chatRepository.sendMessageData(content = message ?: "")) {
                 is Resource.Success -> {
                     savedStateHandle[STATE] = ChatScreenStates(completions = result.data, isLoading = false)
                 }
@@ -38,8 +38,6 @@ class ChatViewModel @Inject constructor(
 
 
     companion object {
-        const val STATE = "STATE"
-        const val MODEL = "gpt-3.5-turbo-0301"
-        const val USER = "user"
+        private const val STATE = "STATE"
     }
 }

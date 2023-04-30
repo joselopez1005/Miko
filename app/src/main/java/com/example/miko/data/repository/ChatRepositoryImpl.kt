@@ -11,19 +11,19 @@ import com.example.miko.domain.util.Resource
 import java.lang.Exception
 import javax.inject.Inject
 
+const val MODEL = "gpt-3.5-turbo-0301"
+const val USER = "user"
 class ChatRepositoryImpl @Inject constructor(
     private val openApi: OpenApi
 ): ChatRepository {
     override suspend fun sendMessageData(
-        model: String,
-        role: String,
         content: String
     ): Resource<Completions> {
         return try {
             Resource.Success(
                 openApi.getTextCompletion(
                     "Bearer ${BuildConfig.OPEN_API_KEY}",
-                    PromptBody(model, listOf(MessageBody(role,content)), 3)
+                    PromptBody(MODEL, listOf(MessageBody(USER,content)), 3)
                 ).toCompletions()
             )
         } catch (e: Exception) {
