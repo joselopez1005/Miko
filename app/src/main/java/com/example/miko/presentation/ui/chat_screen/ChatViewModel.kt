@@ -3,6 +3,7 @@ package com.example.miko.presentation.ui.chat_screen
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.miko.domain.chat.Message
 import com.example.miko.domain.repository.ChatRepository
 import com.example.miko.domain.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,20 +18,26 @@ class ChatViewModel @Inject constructor(
 
     val state = savedStateHandle.getStateFlow(STATE, ChatScreenStates())
 
-    init {
-        sendMessage("Test")
+    fun onEvent(event: ChatScreenEvents) {
+        when(event) {
+            is ChatScreenEvents.onSendMessage -> {
+                state.value.chatLogs.add(Message(USER, event.message))
+                sendMessage(event.message)
+            }
+        }
     }
 
-    fun sendMessage(message: String?) {
+    fun sendMessage(message: String) {
         viewModelScope.launch {
-            savedStateHandle[STATE] = ChatScreenStates(completions = null, isLoading = true)
+            savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = true)
 
             when (val result = chatRepository.sendMessageData(content = message ?: "")) {
                 is Resource.Success -> {
-                    savedStateHandle[STATE] = ChatScreenStates(completions = result.data, isLoading = false)
+                    savedStateHandle[STATE] = state.value.copy(completions = result.data, isLoading = false)
+                    state.value.chatLogs.add(Message(result.data!!.messages.first().role, result.data.messages.first().content))
                 }
                 is Resource.Error -> {
-                    savedStateHandle[STATE] = ChatScreenStates(completions = null, isLoading = false, error = result.message)
+                    savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = false, error = result.message)
                 }
             }
         }
@@ -39,5 +46,7 @@ class ChatViewModel @Inject constructor(
 
     companion object {
         private const val STATE = "STATE"
+        const val USER = "user"
+        const val ASSISTANT = "assistant"
     }
 }
