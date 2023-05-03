@@ -22,7 +22,6 @@ class MainActivity : ComponentActivity() {
     private val viewModel: ChatViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel.sendMessage("test")
         setContent {
             MikoTheme {
                 Surface(
