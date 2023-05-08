@@ -32,8 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.miko.R
-import com.example.miko.data.repository.USER
 import com.example.miko.domain.chat.ProfileInfo
+import com.example.miko.presentation.ui.chat_screen.ChatViewModel.Companion.SYSTEM
+import com.example.miko.presentation.ui.chat_screen.ChatViewModel.Companion.USER
 import com.example.miko.presentation.ui.theme.MikoTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,7 +80,7 @@ fun ChatScreenContent(
                     onValueChange = {textState.value = it}
                 )
 
-                Button(onClick = {onButtonPressed(ChatScreenEvents.onSendMessage(textState.value.text))} ) {
+                Button(onClick = {onButtonPressed(ChatScreenEvents.OnSendMessage(textState.value.text))} ) {
                     Text(text = "Done")
                 }
             }
@@ -96,10 +97,11 @@ fun ChatMessageSection(
         LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)){
             items(state.chatLogs.size) {
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    if (state.chatLogs[it].role == USER) {
-                        Text(text = state.chatLogs[it].content, color = Color.Red, modifier = Modifier.align(Alignment.CenterEnd))
-                    } else {
-                        Text(text = state.chatLogs[it].content)
+                    when(state.chatLogs[it].role) {
+                        USER -> Text(text = state.chatLogs[it].content, color = Color.Red, modifier = Modifier.align(Alignment.CenterEnd))
+                        SYSTEM -> Text(text = "Start Conversation", modifier = Modifier.align(Alignment.Center))
+                        else -> Text(text = state.chatLogs[it].content)
+
                     }
                 }
             }

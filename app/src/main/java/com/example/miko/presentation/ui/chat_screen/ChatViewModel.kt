@@ -20,18 +20,18 @@ class ChatViewModel @Inject constructor(
 
     fun onEvent(event: ChatScreenEvents) {
         when(event) {
-            is ChatScreenEvents.onSendMessage -> {
+            is ChatScreenEvents.OnSendMessage -> {
                 state.value.chatLogs.add(Message(USER, event.message))
-                sendMessage(event.message)
+                sendMessage()
             }
         }
     }
 
-    private fun sendMessage(message: String) {
+    private fun sendMessage() {
         viewModelScope.launch {
             savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = true)
             state.value.chatLogs.add(Message(ASSISTANT, "Loading..."))
-            when (val result = chatRepository.sendMessageData(content = message)) {
+            when (val result = chatRepository.sendMessageData(state.value.chatLogs)) {
                 is Resource.Success -> {
                     state.value.chatLogs.removeLast()
                     savedStateHandle[STATE] = state.value.copy(completions = result.data, isLoading = false)
@@ -50,5 +50,6 @@ class ChatViewModel @Inject constructor(
         private const val STATE = "STATE"
         const val USER = "user"
         const val ASSISTANT = "assistant"
+        const val SYSTEM = "system"
     }
 }
