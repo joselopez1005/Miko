@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,10 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.miko.R
-import com.example.miko.domain.chat.ProfileInfo
 import com.example.miko.presentation.ui.chat_screen.ChatViewModel.Companion.SYSTEM
 import com.example.miko.presentation.ui.chat_screen.ChatViewModel.Companion.USER
 import com.example.miko.presentation.ui.theme.MikoTheme
@@ -94,7 +92,9 @@ fun ChatMessageSection(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)){
+        LazyColumn(modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)){
             items(state.chatLogs.size) {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     when(state.chatLogs[it].role) {
@@ -115,46 +115,62 @@ fun TopBar(
     modifier: Modifier
 ) {
     Row(
-        modifier,
-        verticalAlignment = Alignment.CenterVertically,
+        modifier
+            .background(MaterialTheme.colorScheme.primary)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        ProfileInfoSection(profileInfo = state.chatProfile)
+        ProfileInfoSection(state = state)
     }
 }
 
 @Composable
 fun ProfileInfoSection(
     modifier: Modifier = Modifier,
-    profileInfo: ProfileInfo
+    state: ChatScreenStates
 ) {
     Row(
         modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            painter = painterResource(id = profileInfo.iconRes),
+            painter = painterResource(id = state.chatProfile.iconRes),
             contentDescription = null,
             modifier = Modifier
                 .size(50.dp)
                 .clip(CircleShape)
                 .padding(16.dp)
         )
+        Box(
+            modifier = Modifier.height(40.dp)
+        ) {
+            Text(
+                text = state.chatProfile.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.padding(bottom = 2.dp).align(Alignment.TopStart)
+            )
+            if (state.isLoading) {
+                Text(
+                    text = "Typing...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.align(Alignment.BottomStart)
+                )
+            }
 
-        Text(
-            text = profileInfo.name,
-            fontSize = 16.sp,
-            color = Color.White
-        )
+        }
+
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun ChatScreenContentPreview() {
     MikoTheme {
         ChatScreenContent(
-            ChatScreenStates(completions = null, false, null),
+            ChatScreenStates(completions = null, true, null),
             onButtonPressed = {}
         )
     }
@@ -164,6 +180,6 @@ fun ChatScreenContentPreview() {
 @Composable
 fun ProfileInfoSectionPreview() {
     MikoTheme {
-        ProfileInfoSection(modifier = Modifier.fillMaxWidth(), profileInfo = ProfileInfo("Miko", R.drawable.person_girl))
+        ProfileInfoSection(modifier = Modifier.fillMaxWidth(), ChatScreenStates(completions = null, true, null))
     }
 }
