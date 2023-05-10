@@ -31,16 +31,23 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.miko.presentation.ui.chat_screen.ChatViewModel.Companion.ASSISTANT
 import com.example.miko.presentation.ui.chat_screen.ChatViewModel.Companion.SYSTEM
 import com.example.miko.presentation.ui.chat_screen.ChatViewModel.Companion.USER
+import com.example.miko.presentation.ui.theme.MessageBubbleShapeAssistant
+import com.example.miko.presentation.ui.theme.MessageBubbleShapeUser
 import com.example.miko.presentation.ui.theme.MikoTheme
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel()
 ) {
-    ChatScreenContent(state = viewModel.state.collectAsState().value, onButtonPressed = viewModel::onEvent)
+    ChatScreenContent(
+        state = viewModel.state.collectAsState().value,
+        onButtonPressed = viewModel::onEvent
+    )
 }
 
 @ExperimentalMaterial3Api
@@ -63,9 +70,11 @@ fun ChatScreenContent(
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
-            ChatMessageSection(state = state, modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth())
+            ChatMessageSection(
+                state = state, modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+            )
 
             Row(
                 modifier = Modifier
@@ -75,34 +84,11 @@ fun ChatScreenContent(
             ) {
                 TextField(
                     value = textState.value,
-                    onValueChange = {textState.value = it}
+                    onValueChange = { textState.value = it }
                 )
 
-                Button(onClick = {onButtonPressed(ChatScreenEvents.OnSendMessage(textState.value.text))} ) {
+                Button(onClick = { onButtonPressed(ChatScreenEvents.OnSendMessage(textState.value.text)) }) {
                     Text(text = "Done")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ChatMessageSection(
-    state: ChatScreenStates,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        LazyColumn(modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f)){
-            items(state.chatLogs.size) {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    when(state.chatLogs[it].role) {
-                        USER -> Text(text = state.chatLogs[it].content, color = Color.Red, modifier = Modifier.align(Alignment.CenterEnd))
-                        SYSTEM -> Text(text = "Start Conversation", modifier = Modifier.align(Alignment.Center))
-                        else -> Text(text = state.chatLogs[it].content)
-
-                    }
                 }
             }
         }
@@ -148,7 +134,9 @@ fun ProfileInfoSection(
                 text = state.chatProfile.name,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.padding(bottom = 2.dp).align(Alignment.TopStart)
+                modifier = Modifier
+                    .padding(bottom = 2.dp)
+                    .align(Alignment.TopStart)
             )
             if (state.isLoading) {
                 Text(
@@ -164,6 +152,78 @@ fun ProfileInfoSection(
     }
 }
 
+@Composable
+fun ChatMessageSection(
+    state: ChatScreenStates,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(16.dp)
+        ) {
+            items(state.chatLogs.size) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    when (state.chatLogs[it].role) {
+                        USER -> {
+                            MessageBubble(
+                                message = state.chatLogs[it].content,
+                                sender = USER,
+                                modifier = Modifier.align(Alignment.CenterEnd)
+                            )
+                        }
+
+                        SYSTEM -> {
+                            Text(
+                                text = Date().toString(),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+
+                        else -> {
+                            MessageBubble(
+                                message = state.chatLogs[it].content,
+                                sender = ASSISTANT,
+                                modifier = Modifier.align(Alignment.CenterStart)
+                            )
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MessageBubble(
+    message: String,
+    sender: String,
+    modifier: Modifier = Modifier
+) {
+    val isUser = sender == USER
+    Box(
+        modifier = modifier
+            .clip(
+               if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
+            )
+            .background(if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary)
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary,
+            modifier = modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+    }
+
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
@@ -176,10 +236,13 @@ fun ChatScreenContentPreview() {
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun ProfileInfoSectionPreview() {
+fun MessageBubblePreview() {
     MikoTheme {
-        ProfileInfoSection(modifier = Modifier.fillMaxWidth(), ChatScreenStates(completions = null, true, null))
+        MessageBubble(
+            message = "This is a long sentence, I just want to see what happens \n if it goes next line",
+            sender = USER
+        )
     }
 }
