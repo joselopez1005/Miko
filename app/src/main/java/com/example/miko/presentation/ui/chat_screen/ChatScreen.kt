@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.miko.presentation.ui.chat_screen
 
 import androidx.compose.foundation.background
@@ -10,14 +12,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -31,12 +35,15 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.miko.R
+import com.example.miko.domain.chat.Message
 import com.example.miko.presentation.ui.chat_screen.ChatViewModel.Companion.ASSISTANT
 import com.example.miko.presentation.ui.chat_screen.ChatViewModel.Companion.SYSTEM
 import com.example.miko.presentation.ui.chat_screen.ChatViewModel.Companion.USER
 import com.example.miko.presentation.ui.theme.MessageBubbleShapeAssistant
 import com.example.miko.presentation.ui.theme.MessageBubbleShapeUser
 import com.example.miko.presentation.ui.theme.MikoTheme
+import com.example.miko.presentation.ui.theme.Shapes
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,8 +63,7 @@ fun ChatScreenContent(
     state: ChatScreenStates,
     onButtonPressed: (ChatScreenEvents) -> Unit
 ) {
-    val textState = remember { mutableStateOf(TextFieldValue()) }
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
@@ -66,32 +72,26 @@ fun ChatScreenContent(
             state = state,
             modifier = Modifier
                 .fillMaxWidth()
+                .height(70.dp)
                 .background(Color.Blue)
+                .align(Alignment.TopCenter)
         )
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 70.dp, bottom = 100.dp)) {
             ChatMessageSection(
                 state = state, modifier = Modifier
-                    .align(Alignment.Center)
                     .fillMaxWidth()
             )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                TextField(
-                    value = textState.value,
-                    onValueChange = { textState.value = it }
-                )
-
-                Button(onClick = { onButtonPressed(ChatScreenEvents.OnSendMessage(textState.value.text)) }) {
-                    Text(text = "Done")
-                }
-            }
         }
+
+        BottomChatSection(
+            Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .height(100.dp)
+        )
     }
 }
 
@@ -199,6 +199,61 @@ fun ChatMessageSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BottomChatSection(
+    modifier: Modifier = Modifier
+) {
+    val textState = remember { mutableStateOf(TextFieldValue()) }
+
+    Column(modifier) {
+        Divider(thickness = 1.dp)
+        Row(
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(8.dp)
+        ) {
+            TextField(
+                value = textState.value,
+                onValueChange = { textState.value = it },
+                placeholder = {
+                    Text("Type your message...", style = MaterialTheme.typography.bodyLarge)
+                },
+                colors = TextFieldDefaults.textFieldColors(
+                    textColor = MaterialTheme.colorScheme.onSecondary,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent
+                ),
+                leadingIcon = {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.width(60.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.insert_emoji),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                        )
+
+                        Divider(
+                            thickness = 1.dp,
+                            color = MaterialTheme.colorScheme.surfaceTint,
+                            modifier = Modifier.width(1.dp).height(20.dp)
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .clip(Shapes.extraLarge)
+                    .background(MaterialTheme.colorScheme.secondary)
+            )
+        }
+    }
+}
+
 @Composable
 fun MessageBubble(
     message: String,
@@ -209,7 +264,7 @@ fun MessageBubble(
     Box(
         modifier = modifier
             .clip(
-               if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
+                if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
             )
             .background(if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary)
     ) {
@@ -230,7 +285,14 @@ fun MessageBubble(
 fun ChatScreenContentPreview() {
     MikoTheme {
         ChatScreenContent(
-            ChatScreenStates(completions = null, true, null),
+            ChatScreenStates(
+                completions = null, true, null,
+                chatLogs = mutableListOf(
+                    Message("system", "You are a helpful assistant"),
+                    Message(USER, "Hello my name is Jose"),
+                    Message(ASSISTANT, "Hello, Jose, my name is Miko")
+                ),
+            ),
             onButtonPressed = {}
         )
     }
@@ -244,5 +306,13 @@ fun MessageBubblePreview() {
             message = "This is a long sentence, I just want to see what happens \n if it goes next line",
             sender = USER
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BottomChatSectionPreview() {
+    MikoTheme {
+        BottomChatSection()
     }
 }
