@@ -11,8 +11,10 @@ import com.example.miko.domain.repository.ChatRepository
 import com.example.miko.domain.util.Resource
 import java.lang.Exception
 import javax.inject.Inject
+import javax.inject.Singleton
 
 const val MODEL = "gpt-3.5-turbo-0301"
+@Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val openApi: OpenApi
 ): ChatRepository {
