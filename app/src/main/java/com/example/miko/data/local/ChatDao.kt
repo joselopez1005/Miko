@@ -9,11 +9,14 @@ import androidx.room.Query
 interface ChatDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insetChatMessage(
+    suspend fun insertChatMessage(
         chatMessage: ChatMessageEntity
     )
 
     @Query("DELETE FROM ChatMessageEntity")
     suspend fun deleteChatMessage()
+
+    @Query("SELECT * FROM ChatMessageEntity ORDER BY id DESC LIMIT 1")
+    suspend fun selectLatestMessage(): ChatMessageEntity
 
 }

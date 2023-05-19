@@ -29,17 +29,18 @@ class ChatViewModel @Inject constructor(
 
     private fun sendMessage() {
         viewModelScope.launch {
-            savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = true)
-            state.value.chatLogs.add(Message(ASSISTANT, "Loading..."))
-            when (val result = chatRepository.sendMessageData(state.value.chatLogs)) {
-                is Resource.Success -> {
-                    state.value.chatLogs.removeLast()
-                    savedStateHandle[STATE] = state.value.copy(completions = result.data, isLoading = false)
-                    state.value.chatLogs.add(Message(result.data!!.messages.first().role, result.data.messages.first().content))
-                }
-                is Resource.Error -> {
-                    state.value.chatLogs.removeLast()
-                    savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = false, error = result.message)
+            chatRepository.sendMessageData(state.value.chatLogs).collect{ result ->
+                when(result) {
+                    is Resource.Success -> {
+                        savedStateHandle[STATE] = state.value.copy(completions = result.data, isLoading = false)
+                        state.value.chatLogs.add(Message(result.data!!.messages.first().role, result.data.messages.first().content))
+                    }
+                    is Resource.Error -> {
+                        savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = false, error = result.message)
+                    }
+                    is Resource.Loading -> {
+                        savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = result.isLoading)
+                    }
                 }
             }
         }
