@@ -1,5 +1,6 @@
 package com.example.miko.presentation.ui.chat_screen
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,6 +18,10 @@ class ChatViewModel @Inject constructor(
 ): ViewModel() {
 
     val state = savedStateHandle.getStateFlow(STATE, ChatScreenStates())
+
+    init {
+        getAllMessages()
+    }
 
     fun onEvent(event: ChatScreenEvents) {
         when(event) {
@@ -40,6 +45,28 @@ class ChatViewModel @Inject constructor(
                     }
                     is Resource.Loading -> {
                         savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = result.isLoading)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun getAllMessages() {
+        viewModelScope.launch {
+            chatRepository.getMessageData().collect { result ->
+                when(result) {
+                    is Resource.Success -> {
+                        Log.d("MessageResult", result.data?.messages?.size.toString())
+                        savedStateHandle[STATE] = state.value.copy(completions = result.data)
+                        result.data?.let{ data ->
+                            data.messages.forEach {
+                                state.value.chatLogs.add(it)
+                            }
+                        }
+                    }
+                    is Resource.Error -> {
+                    }
+                    is Resource.Loading -> {
                     }
                 }
             }

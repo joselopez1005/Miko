@@ -19,4 +19,7 @@ interface ChatDao {
     @Query("SELECT * FROM ChatMessageEntity ORDER BY id DESC LIMIT 1")
     suspend fun selectLatestMessage(): ChatMessageEntity
 
+    @Query("SELECT * FROM ChatMessageEntity")
+    suspend fun getAllMessages(): List<ChatMessageEntity>
+
 }

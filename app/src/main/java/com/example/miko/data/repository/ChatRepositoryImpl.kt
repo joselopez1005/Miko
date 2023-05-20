@@ -4,6 +4,7 @@ import com.example.miko.BuildConfig
 import com.example.miko.data.local.ChatDatabase
 import com.example.miko.data.mappers.toChatMessageEntity
 import com.example.miko.data.mappers.toCompletions
+import com.example.miko.data.mappers.toMessage
 import com.example.miko.data.remote.MessageBody
 import com.example.miko.data.remote.OpenApi
 import com.example.miko.data.remote.PromptBody
@@ -25,23 +26,6 @@ class ChatRepositoryImpl @Inject constructor(
 ): ChatRepository {
 
     private val dao = db.dao
-
-//    override suspend fun sendMessageData(
-//        messages: List<Message>
-//    ): Resource<Completions> {
-//        return try {
-//            Resource.Success(
-//                openApi.getTextCompletion(
-//                    "Bearer ${BuildConfig.OPEN_API_KEY}",
-//                    PromptBody(MODEL, messages.map { MessageBody(it.role, it.content) }, 3)
-//                ).toCompletions()
-//            )
-//        } catch (e: Exception) {
-//            e.printStackTrace()
-//            Resource.Error(e.message ?: "Unknown Error")
-//        }
-//    }
-
      override suspend fun sendMessageData(
         messages: List<Message>
     ): Flow<Resource<Completions>> {
@@ -69,5 +53,12 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-
+    override suspend fun getMessageData(): Flow<Resource<Completions>> {
+        return flow {
+            emit(Resource.Loading(true))
+            val listOfMessages = dao.getAllMessages().map { it.toMessage() }
+            emit(Resource.Success(Completions(listOfMessages)))
+            emit(Resource.Loading(false))
+        }
+    }
 }

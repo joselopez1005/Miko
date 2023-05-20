@@ -26,3 +26,7 @@ fun Message.toChatMessageEntity(): ChatMessageEntity {
 fun ChatMessageEntity.toCompletions(): Completions {
     return Completions(mutableListOf(Message(role = role, content = content)))
 }
+
+fun ChatMessageEntity.toMessage(): Message {
+    return Message(role = role, content = content)
+}
