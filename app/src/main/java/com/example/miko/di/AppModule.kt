@@ -46,6 +46,7 @@ object AppModule {
             app,
             ChatDatabase::class.java,
             "chatdb.db"
-        ).build()
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 }

@@ -9,6 +9,7 @@ import com.example.miko.domain.repository.ChatRepository
 import com.example.miko.domain.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,7 +27,7 @@ class ChatViewModel @Inject constructor(
     fun onEvent(event: ChatScreenEvents) {
         when(event) {
             is ChatScreenEvents.OnSendMessage -> {
-                state.value.chatLogs.add(Message(USER, event.message))
+                state.value.chatLogs.add(Message(USER, event.message, LocalDateTime.now().toString()))
                 sendMessage()
             }
         }
@@ -38,7 +39,7 @@ class ChatViewModel @Inject constructor(
                 when(result) {
                     is Resource.Success -> {
                         savedStateHandle[STATE] = state.value.copy(completions = result.data, isLoading = false)
-                        state.value.chatLogs.add(Message(result.data!!.messages.first().role, result.data.messages.first().content))
+                        state.value.chatLogs.add(Message(result.data!!.messages.first().role, result.data.messages.first().content, result.data.messages.first().time))
                     }
                     is Resource.Error -> {
                         savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = false, error = result.message)
