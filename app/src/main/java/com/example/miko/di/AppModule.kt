@@ -1,5 +1,8 @@
 package com.example.miko.di
 
+import android.app.Application
+import androidx.room.Room
+import com.example.miko.data.local.ChatDatabase
 import com.example.miko.data.remote.OpenApi
 import dagger.Module
 import dagger.Provides
@@ -34,5 +37,16 @@ object AppModule {
             .client(okHttpClient)
             .build()
             .create()
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatDatabase(app: Application): ChatDatabase {
+        return Room.databaseBuilder(
+            app,
+            ChatDatabase::class.java,
+            "chatdb.db"
+        ).fallbackToDestructiveMigration()
+            .build()
     }
 }

@@ -1,5 +1,6 @@
 package com.example.miko.presentation.ui.chat_screen
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,6 +9,7 @@ import com.example.miko.domain.repository.ChatRepository
 import com.example.miko.domain.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 @HiltViewModel
@@ -18,10 +20,14 @@ class ChatViewModel @Inject constructor(
 
     val state = savedStateHandle.getStateFlow(STATE, ChatScreenStates())
 
+    init {
+        getAllMessages()
+    }
+
     fun onEvent(event: ChatScreenEvents) {
         when(event) {
             is ChatScreenEvents.OnSendMessage -> {
-                state.value.chatLogs.add(Message(USER, event.message))
+                state.value.chatLogs.add(Message(USER, event.message, LocalDateTime.now().toString()))
                 sendMessage()
             }
         }
@@ -29,17 +35,40 @@ class ChatViewModel @Inject constructor(
 
     private fun sendMessage() {
         viewModelScope.launch {
-            savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = true)
-            state.value.chatLogs.add(Message(ASSISTANT, "Loading..."))
-            when (val result = chatRepository.sendMessageData(state.value.chatLogs)) {
-                is Resource.Success -> {
-                    state.value.chatLogs.removeLast()
-                    savedStateHandle[STATE] = state.value.copy(completions = result.data, isLoading = false)
-                    state.value.chatLogs.add(Message(result.data!!.messages.first().role, result.data.messages.first().content))
+            chatRepository.sendMessageData(state.value.chatLogs).collect{ result ->
+                when(result) {
+                    is Resource.Success -> {
+                        savedStateHandle[STATE] = state.value.copy(completions = result.data, isLoading = false)
+                        state.value.chatLogs.add(Message(result.data!!.messages.first().role, result.data.messages.first().content, result.data.messages.first().time))
+                    }
+                    is Resource.Error -> {
+                        savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = false, error = result.message)
+                    }
+                    is Resource.Loading -> {
+                        savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = result.isLoading)
+                    }
                 }
-                is Resource.Error -> {
-                    state.value.chatLogs.removeLast()
-                    savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = false, error = result.message)
+            }
+        }
+    }
+
+    private fun getAllMessages() {
+        viewModelScope.launch {
+            chatRepository.getMessageData().collect { result ->
+                when(result) {
+                    is Resource.Success -> {
+                        Log.d("MessageResult", result.data?.messages?.size.toString())
+                        savedStateHandle[STATE] = state.value.copy(completions = result.data)
+                        result.data?.let{ data ->
+                            data.messages.forEach {
+                                state.value.chatLogs.add(it)
+                            }
+                        }
+                    }
+                    is Resource.Error -> {
+                    }
+                    is Resource.Loading -> {
+                    }
                 }
             }
         }
