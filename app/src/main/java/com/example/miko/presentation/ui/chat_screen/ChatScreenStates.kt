@@ -11,7 +11,7 @@ data class ChatScreenStates (
     val completions: Completions? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val chatProfile: ProfileInfo = ProfileInfo("Miko", R.drawable.person_girl),
+    val chatProfile: ProfileInfo = ProfileInfo("Miko", R.drawable.ic_morgana),
     val chatLogs: MutableList<Message> = mutableListOf(Message("system", "You are a helpful assistant", LocalDateTime.now().toString())),
 
     ) : Serializable

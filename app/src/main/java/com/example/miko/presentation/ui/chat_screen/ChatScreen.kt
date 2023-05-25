@@ -2,15 +2,24 @@
 
 package com.example.miko.presentation.ui.chat_screen
 
+import android.view.inputmethod.InputMethodManager
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -32,11 +41,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.miko.R
 import com.example.miko.domain.chat.Message
@@ -47,6 +65,7 @@ import com.example.miko.presentation.ui.theme.MessageBubbleShapeAssistant
 import com.example.miko.presentation.ui.theme.MessageBubbleShapeUser
 import com.example.miko.presentation.ui.theme.MikoTheme
 import com.example.miko.presentation.ui.theme.Shapes
+import com.example.miko.presentation.ui.theme.profileIcon
 import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,8 +95,8 @@ fun ChatScreenContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(70.dp)
-                .background(Color.Blue)
                 .align(Alignment.TopCenter)
+                .zIndex(1f)
         )
 
         Column(modifier = Modifier
@@ -85,7 +104,14 @@ fun ChatScreenContent(
             ChatMessageSection(
                 state = state, modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 70.dp, bottom = 100.dp, start = 10.dp, end = 10.dp)
+                    .padding(top = 70.dp, bottom = 80.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.White, MaterialTheme.colorScheme.surfaceVariant),
+                            tileMode = TileMode.Clamp
+                        )
+                    )
+                    .padding(start = 10.dp, end = 10.dp)
             )
         }
 
@@ -93,6 +119,7 @@ fun ChatScreenContent(
             onButtonPressed = onButtonPressed,
             modifier = Modifier
                 .fillMaxWidth()
+                .height(80.dp)
                 .align(Alignment.BottomCenter)
         )
     }
@@ -122,13 +149,19 @@ fun ProfileInfoSection(
         modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
+        Image(
             painter = painterResource(id = state.chatProfile.iconRes),
             contentDescription = null,
+            contentScale = ContentScale.Fit,
             modifier = Modifier
-                .size(50.dp)
-                .clip(CircleShape)
-                .padding(16.dp)
+                .padding(horizontal = 8.dp)
+                .height(40.dp)
+                .width(40.dp)
+                .clip(profileIcon)
+                .background(MaterialTheme.colorScheme.tertiary)
+                .border(width = 1.dp, color = MaterialTheme.colorScheme.onPrimary)
+
+
         )
         Box(
             modifier = Modifier.height(40.dp)
@@ -136,6 +169,7 @@ fun ProfileInfoSection(
             Text(
                 text = state.chatProfile.name,
                 style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier
                     .padding(bottom = 2.dp)
@@ -161,11 +195,11 @@ fun ChatMessageSection(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
+
     LazyColumn(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(20.dp),
         modifier = modifier
-            .fillMaxSize()
     ) {
         items(state.chatLogs.size) {
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -179,11 +213,11 @@ fun ChatMessageSection(
                     }
 
                     SYSTEM -> {
-                        Text(
-                            text = Date().toString(),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+//                        Text(
+//                            text = Date().toString(),
+//                            style = MaterialTheme.typography.bodySmall,
+//                            modifier = Modifier.align(Alignment.Center)
+//                        )
                     }
 
                     else -> {
@@ -195,6 +229,9 @@ fun ChatMessageSection(
                     }
 
                 }
+            }
+            if (it == state.chatLogs.size -1 ){
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -219,7 +256,8 @@ fun BottomChatSection(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(8.dp)
         ) {
             TextField(
@@ -232,10 +270,10 @@ fun BottomChatSection(
                     )
                 },
                 colors = TextFieldDefaults.textFieldColors(
-                    textColor = MaterialTheme.colorScheme.onSecondary,
-                    focusedIndicatorColor = Color.Transparent,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.onSecondary,
                     unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent
+                    disabledIndicatorColor = Color.Transparent,
+                    containerColor = MaterialTheme.colorScheme.secondary
                 ),
                 leadingIcon = {
                     Row(
@@ -253,7 +291,7 @@ fun BottomChatSection(
 
                         Divider(
                             thickness = 1.dp,
-                            color = MaterialTheme.colorScheme.surfaceTint,
+                            color = MaterialTheme.colorScheme.onSecondary,
                             modifier = Modifier
                                 .width(1.dp)
                                 .height(20.dp)
@@ -263,8 +301,8 @@ fun BottomChatSection(
                 modifier = Modifier
                     .width(320.dp)
                     .clip(Shapes.extraLarge)
-                    .background(MaterialTheme.colorScheme.secondary)
-                )
+                    .zIndex(1f)
+            )
 
             Icon(
                 painter = painterResource(id = R.drawable.ic_paper_plane_send),
@@ -290,12 +328,12 @@ fun MessageBubble(
             .clip(
                 if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
             )
-            .background(if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary)
+            .background(if (isUser) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary)
     ) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,
-            color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary,
+            color = if (isUser) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary,
             modifier = modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         )
