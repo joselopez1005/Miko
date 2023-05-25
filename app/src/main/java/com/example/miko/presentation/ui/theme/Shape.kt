@@ -12,3 +12,4 @@ val Shapes = Shapes(
 
 val MessageBubbleShapeUser = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 0.dp)
 val MessageBubbleShapeAssistant = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 0.dp, bottomEnd = 20.dp)
+val profileIcon = RoundedCornerShape(topStart = 100.dp, topEnd = 100.dp, bottomStart = 100.dp, bottomEnd = 100.dp)

@@ -15,17 +15,22 @@ import androidx.core.view.WindowCompat
 private val DarkColorScheme = darkColorScheme(
     background = Color.White,
     primary = primaryPurple,
-    onPrimary = Color.White,
+    onPrimary = onPrimaryBlack,
     secondary = secondaryGray,
-    onSecondary = onSecondaryGray
+    onSecondary = onSecondaryGray,
+    tertiary = tertiaryPurple,
+    onTertiary = onTertiaryPurple
 )
 
 private val LightColorScheme = lightColorScheme(
     background = Color.White,
     primary = primaryPurple,
-    onPrimary = Color.White,
+    onPrimary = onPrimaryBlack,
     secondary = secondaryGray,
-    onSecondary = onSecondaryGray
+    onSecondary = onSecondaryGray,
+    tertiary = tertiaryPurple,
+    onTertiary = onTertiaryPurple,
+    surfaceVariant = backgroundEnd
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -50,22 +55,22 @@ fun MikoTheme(
 //        val context = LocalContext.current
 //        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
 //      }
-      darkTheme -> DarkColorScheme
-      else -> LightColorScheme
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
     }
     val view = LocalView.current
     if (!view.isInEditMode) {
-      SideEffect {
-        val window = (view.context as Activity).window
-        window.statusBarColor = colorScheme.primary.toArgb()
-        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
-      }
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.primary.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+        }
     }
 
     MaterialTheme(
-      colorScheme = colorScheme,
-      typography = Typography,
-      content = content,
-      shapes = Shapes
+        colorScheme = colorScheme,
+        typography = Typography,
+        content = content,
+        shapes = Shapes
     )
 }
