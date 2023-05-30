@@ -2,24 +2,18 @@
 
 package com.example.miko.presentation.ui.chat_screen
 
-import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,6 +24,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -41,20 +36,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.miko.R
 import com.example.miko.domain.chat.Message
@@ -66,7 +56,7 @@ import com.example.miko.presentation.ui.theme.MessageBubbleShapeUser
 import com.example.miko.presentation.ui.theme.MikoTheme
 import com.example.miko.presentation.ui.theme.Shapes
 import com.example.miko.presentation.ui.theme.profileIcon
-import java.util.Date
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,50 +75,23 @@ fun ChatScreenContent(
     state: ChatScreenStates,
     onButtonPressed: (ChatScreenEvents) -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-    ) {
-        TopBar(
-            state = state,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(70.dp)
-                .align(Alignment.TopCenter)
-                .zIndex(1f)
-        )
-
+    Scaffold(
+        topBar = { TopBar(state = state, modifier = Modifier.fillMaxWidth())},
+        bottomBar = { BottomChatSection(onButtonPressed = onButtonPressed)}
+    ) { contentPadding ->
         Column(modifier = Modifier
-            .fillMaxSize()) {
-            ChatMessageSection(
-                state = state, modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 70.dp, bottom = 80.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.White, MaterialTheme.colorScheme.surfaceVariant),
-                            tileMode = TileMode.Clamp
-                        )
-                    )
-                    .padding(start = 10.dp, end = 10.dp)
-            )
+            .fillMaxSize()
+            .padding(contentPadding)) {
+            ChatMessageSection(state = state, modifier = Modifier.fillMaxSize())
         }
-
-        BottomChatSection(
-            onButtonPressed = onButtonPressed,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .align(Alignment.BottomCenter)
-        )
     }
+
 }
 
 @Composable
 fun TopBar(
     state: ChatScreenStates,
-    modifier: Modifier
+    modifier: Modifier = Modifier
 ) {
     Row(
         modifier
@@ -199,7 +162,12 @@ fun ChatMessageSection(
     LazyColumn(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(20.dp),
-        modifier = modifier
+        modifier = modifier.background(
+            Brush.verticalGradient(
+                colors = listOf(Color.White, MaterialTheme.colorScheme.surfaceVariant),
+                tileMode = TileMode.Clamp
+            )
+        )
     ) {
         items(state.chatLogs.size) {
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -256,8 +224,8 @@ fun BottomChatSection(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .fillMaxWidth()
+                .background(Color.White)
                 .padding(8.dp)
         ) {
             TextField(
@@ -301,7 +269,6 @@ fun BottomChatSection(
                 modifier = Modifier
                     .width(320.dp)
                     .clip(Shapes.extraLarge)
-                    .zIndex(1f)
             )
 
             Icon(
