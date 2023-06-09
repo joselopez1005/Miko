@@ -1,7 +1,9 @@
 package com.example.miko.presentation.ui.chat_screen
 
 import android.util.Log
-import androidx.lifecycle.SavedStateHandle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.miko.domain.chat.Message
@@ -14,11 +16,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
     private val chatRepository: ChatRepository
 ): ViewModel() {
 
-    val state = savedStateHandle.getStateFlow(STATE, ChatScreenStates())
+    //val state = savedStateHandle.getStateFlow(STATE, ChatScreenStates())
+    //val state = MutableStateFlow(ChatScreenStates())
+    var state by mutableStateOf(ChatScreenStates())
 
     init {
         getAllMessages()
@@ -27,7 +30,11 @@ class ChatViewModel @Inject constructor(
     fun onEvent(event: ChatScreenEvents) {
         when(event) {
             is ChatScreenEvents.OnSendMessage -> {
-                state.value.chatLogs.add(Message(USER, event.message, LocalDateTime.now().toString()))
+                // Divide under 1000 to make it unix time
+                if (true) {
+                    state.chatLogs.add(Message(SYSTEM, "", LocalDateTime.now()))
+                }
+                state.chatLogs.add(Message(USER, event.message, LocalDateTime.now()))
                 sendMessage()
             }
         }
@@ -35,17 +42,17 @@ class ChatViewModel @Inject constructor(
 
     private fun sendMessage() {
         viewModelScope.launch {
-            chatRepository.sendMessageData(state.value.chatLogs).collect{ result ->
+            chatRepository.sendMessageData(state.chatLogs).collect{ result ->
                 when(result) {
                     is Resource.Success -> {
-                        savedStateHandle[STATE] = state.value.copy(completions = result.data, isLoading = false)
-                        state.value.chatLogs.add(Message(result.data!!.messages.first().role, result.data.messages.first().content, result.data.messages.first().time))
+                        state = state.copy(completions = result.data, isLoading = false)
+                        state.chatLogs.add(Message(result.data!!.messages.first().role, result.data.messages.first().content, result.data.messages.first().time))
                     }
                     is Resource.Error -> {
-                        savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = false, error = result.message)
+                        state = state.copy(completions = null, isLoading = false, error = result.message)
                     }
                     is Resource.Loading -> {
-                        savedStateHandle[STATE] = state.value.copy(completions = null, isLoading = result.isLoading)
+                        state = state.copy(completions = null, isLoading = result.isLoading)
                     }
                 }
             }
@@ -58,10 +65,10 @@ class ChatViewModel @Inject constructor(
                 when(result) {
                     is Resource.Success -> {
                         Log.d("MessageResult", result.data?.messages?.size.toString())
-                        savedStateHandle[STATE] = state.value.copy(completions = result.data)
+                        state = state.copy(completions = result.data)
                         result.data?.let{ data ->
                             data.messages.forEach {
-                                state.value.chatLogs.add(it)
+                                state.chatLogs.add(it)
                             }
                         }
                     }
@@ -76,7 +83,6 @@ class ChatViewModel @Inject constructor(
 
 
     companion object {
-        private const val STATE = "STATE"
         const val USER = "user"
         const val ASSISTANT = "assistant"
         const val SYSTEM = "system"

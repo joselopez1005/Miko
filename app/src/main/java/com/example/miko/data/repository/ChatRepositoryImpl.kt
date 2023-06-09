@@ -14,7 +14,6 @@ import com.example.miko.domain.repository.ChatRepository
 import com.example.miko.domain.util.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import java.lang.Exception
 import javax.inject.Inject
 import javax.inject.Singleton
 
