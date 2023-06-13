@@ -30,7 +30,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -43,6 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -56,6 +56,8 @@ import com.example.miko.presentation.ui.theme.MessageBubbleShapeUser
 import com.example.miko.presentation.ui.theme.MikoTheme
 import com.example.miko.presentation.ui.theme.Shapes
 import com.example.miko.presentation.ui.theme.profileIcon
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,7 +66,7 @@ fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel()
 ) {
     ChatScreenContent(
-        state = viewModel.state.collectAsState().value,
+        state = viewModel.state,
         onButtonPressed = viewModel::onEvent
     )
 }
@@ -82,7 +84,9 @@ fun ChatScreenContent(
         Column(modifier = Modifier
             .fillMaxSize()
             .padding(contentPadding)) {
-            ChatMessageSection(state = state, modifier = Modifier.fillMaxSize())
+            ChatMessageSection(state = state, modifier = Modifier
+                .fillMaxSize()
+            )
         }
     }
 
@@ -162,12 +166,15 @@ fun ChatMessageSection(
     LazyColumn(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(20.dp),
-        modifier = modifier.background(
-            Brush.verticalGradient(
-                colors = listOf(Color.White, MaterialTheme.colorScheme.surfaceVariant),
-                tileMode = TileMode.Clamp
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color.White, MaterialTheme.colorScheme.surfaceVariant),
+                    tileMode = TileMode.Clamp
+                )
             )
-        )
+            .padding(horizontal = 8.dp)
     ) {
         items(state.chatLogs.size) {
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -175,24 +182,27 @@ fun ChatMessageSection(
                     USER -> {
                         MessageBubble(
                             message = state.chatLogs[it].content,
+                            time = state.chatLogs[it].time,
                             sender = USER,
-                            modifier = Modifier.align(Alignment.CenterEnd)
+                            modifier = Modifier.align(Alignment.CenterEnd).fillMaxWidth(.9f)
                         )
                     }
 
                     SYSTEM -> {
-//                        Text(
-//                            text = Date().toString(),
-//                            style = MaterialTheme.typography.bodySmall,
-//                            modifier = Modifier.align(Alignment.Center)
-//                        )
+                        Text(
+                            text = state.chatLogs[it].time.toString(),
+                            color = MaterialTheme.colorScheme.onSecondary,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
                     }
 
                     else -> {
                         MessageBubble(
                             message = state.chatLogs[it].content,
+                            time = state.chatLogs[it].time,
                             sender = ASSISTANT,
-                            modifier = Modifier.align(Alignment.CenterStart)
+                            modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth(.9f)
                         )
                     }
 
@@ -241,7 +251,8 @@ fun BottomChatSection(
                     focusedIndicatorColor = MaterialTheme.colorScheme.onSecondary,
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,
-                    containerColor = MaterialTheme.colorScheme.secondary
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    textColor = Color.Black
                 ),
                 leadingIcon = {
                     Row(
@@ -252,6 +263,7 @@ fun BottomChatSection(
                         Icon(
                             painter = painterResource(id = R.drawable.insert_emoji),
                             contentDescription = null,
+                            tint = Color.Black,
                             modifier = Modifier
                                 .size(30.dp)
                                 .clip(CircleShape)
@@ -274,6 +286,7 @@ fun BottomChatSection(
             Icon(
                 painter = painterResource(id = R.drawable.ic_paper_plane_send),
                 contentDescription = null,
+                tint = Color.Black,
                 modifier = Modifier.clickable {
                     onButtonPressed.invoke(ChatScreenEvents.OnSendMessage(textState.value.text))
                     textState.value = TextFieldValue()
@@ -286,24 +299,45 @@ fun BottomChatSection(
 @Composable
 fun MessageBubble(
     message: String,
+    time: LocalDateTime,
     sender: String,
     modifier: Modifier = Modifier
 ) {
     val isUser = sender == USER
-    Box(
+    val formatter = DateTimeFormatter.ofPattern("h:mm a")
+    val currentMessageTime = time.format(formatter)
+    val isTimeShown = remember { mutableStateOf(false) }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly,
         modifier = modifier
-            .clip(
-                if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
-            )
-            .background(if (isUser) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary)
     ) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyLarge,
             color = if (isUser) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary,
-            modifier = modifier
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+            textAlign = if (isUser) TextAlign.End else TextAlign.Start,
+            modifier = Modifier
+                .clip
+                    (if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
+                )
+                .background(if (isUser) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary)
+                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .clickable { isTimeShown.value = !isTimeShown.value }
+                .align(if(isUser) Alignment.End else Alignment.Start)
         )
+
+        if (isTimeShown.value) {
+            Text(
+                text = currentMessageTime,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondary,
+                textAlign = if (isUser) TextAlign.End else TextAlign.Start,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 16.dp, bottom = 2.dp)
+            )
+        }
     }
 
 }
@@ -317,9 +351,9 @@ fun ChatScreenContentPreview() {
             ChatScreenStates(
                 completions = null, true, null,
                 chatLogs = mutableListOf(
-                    Message("system", "You are a helpful assistant", ""),
-                    Message(USER, "Hello my name is Jose", ""),
-                    Message(ASSISTANT, "Hello, Jose, my name is Miko", "")
+                    Message("system", "You are a helpful assistant", LocalDateTime.now()),
+                    Message(USER, "Hello my name is Jose", LocalDateTime.now()),
+                    Message(ASSISTANT, "Hello, Jose, my name is Miko", LocalDateTime.now())
                 ),
             ),
             onButtonPressed = {}
@@ -333,6 +367,7 @@ fun MessageBubblePreview() {
     MikoTheme {
         MessageBubble(
             message = "This is a long sentence, I just want to see what happens \n if it goes next line",
+            time = LocalDateTime.now(),
             sender = USER
         )
     }
