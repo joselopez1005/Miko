@@ -8,4 +8,5 @@ import kotlinx.coroutines.flow.Flow
 interface ChatRepository {
     suspend fun sendMessageData(messages: List<Message>): Flow<Resource<Completions>>
     suspend fun getMessageData(): Flow<Resource<Completions>>
+    suspend fun deleteAllMessages(): Flow<Resource<Boolean>>
 }

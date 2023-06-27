@@ -22,4 +22,6 @@ interface ChatDao {
     @Query("SELECT * FROM ChatMessageEntity")
     suspend fun getAllMessages(): List<ChatMessageEntity>
 
+    @Query("SELECT * FROM ChatMessageEntity WHERE time < :time")
+    suspend fun getAllMessagesTimeRange(time: Long): List<ChatMessageEntity>
 }

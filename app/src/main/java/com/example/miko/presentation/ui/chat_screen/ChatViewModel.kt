@@ -31,11 +31,25 @@ class ChatViewModel @Inject constructor(
         when(event) {
             is ChatScreenEvents.OnSendMessage -> {
                 // Divide under 1000 to make it unix time
-                if (true) {
-                    state.chatLogs.add(Message(SYSTEM, "", LocalDateTime.now()))
-                }
                 state.chatLogs.add(Message(USER, event.message, LocalDateTime.now()))
                 sendMessage()
+            }
+            is ChatScreenEvents.DeleteAllMessages -> {
+                viewModelScope.launch {
+                    chatRepository.deleteAllMessages().collect{ result ->
+                        when(result) {
+                            is Resource.Success -> {
+                                state = state.copy(completions = null, error = null, chatLogs = mutableListOf(), isLoading = false)
+                            }
+                            is Resource.Error -> {
+
+                            }
+                            is Resource.Loading -> {
+                                state = state.copy(isLoading = true)
+                            }
+                        }
+                    }
+                }
             }
         }
     }

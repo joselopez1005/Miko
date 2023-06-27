@@ -14,6 +14,8 @@ import com.example.miko.domain.repository.ChatRepository
 import com.example.miko.domain.util.Resource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,24 +32,31 @@ class ChatRepositoryImpl @Inject constructor(
     ): Flow<Resource<Completions>> {
         return flow {
             emit(Resource.Loading(true))
+
             val sendMessage = try {
+                val validMessageTime = LocalDateTime.now().minusHours(5).toEpochSecond(
+                    ZoneOffset.systemDefault().rules.getOffset(
+                        LocalDateTime.now()))
                 openApi.getTextCompletion(
                     "Bearer ${BuildConfig.OPEN_API_KEY}",
-                    PromptBody(MODEL, messages.map { MessageBody(it.role, it.content) }, 3)
+                    PromptBody(MODEL, dao.getAllMessagesTimeRange(validMessageTime).map { MessageBody(it.role, it.content) }, 1)
                 )
             } catch (e: Exception) {
                 e.printStackTrace()
                 emit(Resource.Error(e.message ?: "Unkown error"))
                 null
             }
-            dao.insertChatMessage(messages.last().toChatMessageEntity())
 
+            dao.insertChatMessage(messages.last().toChatMessageEntity()) // Storing user message
+
+            // Storing AI message
             sendMessage?.let { message ->
                 dao.insertChatMessage(message.toChatMessageEntity())
                 emit(Resource.Success(
                     data = dao.selectLatestMessage().toCompletions()
                 ))
             }
+
             emit(Resource.Loading(false))
         }
     }
@@ -58,6 +67,15 @@ class ChatRepositoryImpl @Inject constructor(
             val listOfMessages = dao.getAllMessages().map { it.toMessage() }
             emit(Resource.Success(Completions(listOfMessages)))
             emit(Resource.Loading(false))
+        }
+    }
+
+    override suspend fun deleteAllMessages(): Flow<Resource<Boolean>> {
+        return flow {
+            emit(Resource.Loading(true))
+            dao.deleteChatMessage()
+            emit(Resource.Loading(false))
+            emit(Resource.Success(true))
         }
     }
 }

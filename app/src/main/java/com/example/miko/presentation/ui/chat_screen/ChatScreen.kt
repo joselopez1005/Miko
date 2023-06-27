@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -77,8 +79,28 @@ fun ChatScreenContent(
     state: ChatScreenStates,
     onButtonPressed: (ChatScreenEvents) -> Unit
 ) {
+    val showDialog = remember { mutableStateOf(false) }
+
+    if (!state.error.isNullOrBlank()) {
+        showDialog.value = true
+        state.error = null
+    }
+    if (showDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDialog.value = false },
+            title = { Text("ERROR") },
+            text = { Text(state.error ?: "Unknown error") },
+            confirmButton = {
+                Button(onClick = { showDialog.value = false }) {
+                    Text("Okay")
+                }
+            }
+        )
+    }
+
+
     Scaffold(
-        topBar = { TopBar(state = state, modifier = Modifier.fillMaxWidth())},
+        topBar = { TopBar(state = state, onButtonPressed = onButtonPressed, modifier = Modifier.fillMaxWidth())},
         bottomBar = { BottomChatSection(onButtonPressed = onButtonPressed)}
     ) { contentPadding ->
         Column(modifier = Modifier
@@ -95,7 +117,8 @@ fun ChatScreenContent(
 @Composable
 fun TopBar(
     state: ChatScreenStates,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onButtonPressed: (ChatScreenEvents) -> Unit
 ) {
     Row(
         modifier
@@ -104,6 +127,9 @@ fun TopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         ProfileInfoSection(state = state)
+        Button(onClick = { onButtonPressed.invoke(ChatScreenEvents.DeleteAllMessages(true)) }) {
+            Text("DELETE MESSAGES")
+        }
     }
 }
 
@@ -184,17 +210,19 @@ fun ChatMessageSection(
                             message = state.chatLogs[it].content,
                             time = state.chatLogs[it].time,
                             sender = USER,
-                            modifier = Modifier.align(Alignment.CenterEnd).fillMaxWidth(.9f)
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .fillMaxWidth(.9f)
                         )
                     }
 
                     SYSTEM -> {
-                        Text(
-                            text = state.chatLogs[it].time.toString(),
-                            color = MaterialTheme.colorScheme.onSecondary,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+//                        Text(
+//                            text = state.chatLogs[it].time.toString(),
+//                            color = MaterialTheme.colorScheme.onSecondary,
+//                            style = MaterialTheme.typography.bodySmall,
+//                            modifier = Modifier.align(Alignment.Center)
+//                        )
                     }
 
                     else -> {
@@ -202,7 +230,9 @@ fun ChatMessageSection(
                             message = state.chatLogs[it].content,
                             time = state.chatLogs[it].time,
                             sender = ASSISTANT,
-                            modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth(.9f)
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .fillMaxWidth(.9f)
                         )
                     }
 
@@ -214,7 +244,9 @@ fun ChatMessageSection(
         }
     }
     LaunchedEffect(state.chatLogs.size) {
-        listState.animateScrollToItem(state.chatLogs.size - 1)
+        if (state.chatLogs.size > 1) {
+            listState.animateScrollToItem(state.chatLogs.size - 1)
+        }
     }
 }
 
@@ -319,12 +351,13 @@ fun MessageBubble(
             textAlign = if (isUser) TextAlign.End else TextAlign.Start,
             modifier = Modifier
                 .clip
-                    (if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
+                    (
+                    if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
                 )
                 .background(if (isUser) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary)
                 .padding(horizontal = 14.dp, vertical = 8.dp)
                 .clickable { isTimeShown.value = !isTimeShown.value }
-                .align(if(isUser) Alignment.End else Alignment.Start)
+                .align(if (isUser) Alignment.End else Alignment.Start)
         )
 
         if (isTimeShown.value) {
