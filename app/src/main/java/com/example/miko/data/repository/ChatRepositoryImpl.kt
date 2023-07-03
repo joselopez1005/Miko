@@ -1,5 +1,6 @@
 package com.example.miko.data.repository
 
+import android.util.Log
 import com.example.miko.BuildConfig
 import com.example.miko.data.local.ChatDatabase
 import com.example.miko.data.mappers.toChatMessageEntity
@@ -33,28 +34,32 @@ class ChatRepositoryImpl @Inject constructor(
         return flow {
             emit(Resource.Loading(true))
 
+            dao.insertChatMessage(messages.last().toChatMessageEntity()) // Storing user message
+
             val sendMessage = try {
                 val validMessageTime = LocalDateTime.now().minusHours(5).toEpochSecond(
                     ZoneOffset.systemDefault().rules.getOffset(
                         LocalDateTime.now()))
+                Log.d("ChatRepository", "ValidMessageTime = $validMessageTime \n CurrentMessageTime = ${messages.last().toChatMessageEntity().time}")
                 openApi.getTextCompletion(
                     "Bearer ${BuildConfig.OPEN_API_KEY}",
                     PromptBody(MODEL, dao.getAllMessagesTimeRange(validMessageTime).map { MessageBody(it.role, it.content) }, 1)
                 )
             } catch (e: Exception) {
                 e.printStackTrace()
-                emit(Resource.Error(e.message ?: "Unkown error"))
+                emit(Resource.Error(e.message ?: "Unknown error"))
                 null
             }
 
-            dao.insertChatMessage(messages.last().toChatMessageEntity()) // Storing user message
-
-            // Storing AI message
-            sendMessage?.let { message ->
-                dao.insertChatMessage(message.toChatMessageEntity())
-                emit(Resource.Success(
-                    data = dao.selectLatestMessage().toCompletions()
-                ))
+            // When setting up personality, we do not want to display the latest message sent back from server
+            if (messages.last().role != "system") {
+                // Storing AI message
+                sendMessage?.let { message ->
+                    dao.insertChatMessage(message.toChatMessageEntity())
+                    emit(Resource.Success(
+                        data = dao.selectLatestMessage().toCompletions()
+                    ))
+                }
             }
 
             emit(Resource.Loading(false))
@@ -66,6 +71,15 @@ class ChatRepositoryImpl @Inject constructor(
             emit(Resource.Loading(true))
             val listOfMessages = dao.getAllMessages().map { it.toMessage() }
             emit(Resource.Success(Completions(listOfMessages)))
+            emit(Resource.Loading(false))
+        }
+    }
+
+    override suspend fun getLatestPersonality(): Flow<Resource<Completions?>> {
+        return flow {
+            emit(Resource.Loading(true))
+            val latestPersonality = dao.getLatestPersonality("system")?.toCompletions()
+            emit(Resource.Success(latestPersonality))
             emit(Resource.Loading(false))
         }
     }
