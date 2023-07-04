@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
 
 package com.example.miko.presentation.ui.chat_screen
 
@@ -14,24 +14,37 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,8 +90,29 @@ fun ChatScreenContent(
     state: ChatScreenStates,
     onButtonPressed: (ChatScreenEvents) -> Unit
 ) {
+    val showDialog = remember { mutableStateOf(false) }
+    var error: String? = null
+    if (!state.error.isNullOrBlank()) {
+        showDialog.value = true
+        error = state.error
+        state.error = null
+    }
+    if (showDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDialog.value = false },
+            title = { Text("ERROR") },
+            text = { Text(error ?: "Unknown error") },
+            confirmButton = {
+                Button(onClick = { showDialog.value = false }) {
+                    Text("Okay")
+                }
+            }
+        )
+    }
+
+
     Scaffold(
-        topBar = { TopBar(state = state, modifier = Modifier.fillMaxWidth())},
+        topBar = { TopBar(state = state, onButtonPressed = onButtonPressed, modifier = Modifier.fillMaxWidth())},
         bottomBar = { BottomChatSection(onButtonPressed = onButtonPressed)}
     ) { contentPadding ->
         Column(modifier = Modifier
@@ -92,19 +126,38 @@ fun ChatScreenContent(
 
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(
     state: ChatScreenStates,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onButtonPressed: (ChatScreenEvents) -> Unit
 ) {
-    Row(
-        modifier
-            .background(MaterialTheme.colorScheme.primary)
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        ProfileInfoSection(state = state)
+    var menuExpanded by remember {
+        mutableStateOf(false)
     }
+
+    TopAppBar(
+        title = { ProfileInfoSection(state = state, modifier = Modifier.offset(x = (-16).dp))},
+        colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
+        navigationIcon = {
+            IconButton(onClick = { /*TODO*/ }) {
+                Icon(Icons.Filled.ArrowBack, null)
+            }
+        },
+        actions = {
+            IconButton(onClick = { menuExpanded = !menuExpanded}) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    null
+                )
+            }
+            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                DropdownMenuItem(text = { Text("Delete all messages") }, onClick = { onButtonPressed.invoke(ChatScreenEvents.DeleteAllMessages)})
+            }
+        },
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -140,19 +193,9 @@ fun ProfileInfoSection(
                 color = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier
                     .padding(bottom = 2.dp)
-                    .align(Alignment.TopStart)
+                    .align(Alignment.CenterStart)
             )
-            if (state.isLoading) {
-                Text(
-                    text = "Typing...",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.align(Alignment.BottomStart)
-                )
-            }
-
         }
-
     }
 }
 
@@ -184,17 +227,19 @@ fun ChatMessageSection(
                             message = state.chatLogs[it].content,
                             time = state.chatLogs[it].time,
                             sender = USER,
-                            modifier = Modifier.align(Alignment.CenterEnd).fillMaxWidth(.9f)
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .fillMaxWidth(.9f)
                         )
                     }
 
                     SYSTEM -> {
-                        Text(
-                            text = state.chatLogs[it].time.toString(),
-                            color = MaterialTheme.colorScheme.onSecondary,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+//                        Text(
+//                            text = state.chatLogs[it].time.toString(),
+//                            color = MaterialTheme.colorScheme.onSecondary,
+//                            style = MaterialTheme.typography.bodySmall,
+//                            modifier = Modifier.align(Alignment.Center)
+//                        )
                     }
 
                     else -> {
@@ -202,7 +247,9 @@ fun ChatMessageSection(
                             message = state.chatLogs[it].content,
                             time = state.chatLogs[it].time,
                             sender = ASSISTANT,
-                            modifier = Modifier.align(Alignment.CenterStart).fillMaxWidth(.9f)
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .fillMaxWidth(.9f)
                         )
                     }
 
@@ -214,7 +261,9 @@ fun ChatMessageSection(
         }
     }
     LaunchedEffect(state.chatLogs.size) {
-        listState.animateScrollToItem(state.chatLogs.size - 1)
+        if (state.chatLogs.size > 1) {
+            listState.animateScrollToItem(state.chatLogs.size - 1)
+        }
     }
 }
 
@@ -319,12 +368,13 @@ fun MessageBubble(
             textAlign = if (isUser) TextAlign.End else TextAlign.Start,
             modifier = Modifier
                 .clip
-                    (if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
+                    (
+                    if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
                 )
                 .background(if (isUser) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary)
                 .padding(horizontal = 14.dp, vertical = 8.dp)
                 .clickable { isTimeShown.value = !isTimeShown.value }
-                .align(if(isUser) Alignment.End else Alignment.Start)
+                .align(if (isUser) Alignment.End else Alignment.Start)
         )
 
         if (isTimeShown.value) {
@@ -349,7 +399,7 @@ fun ChatScreenContentPreview() {
     MikoTheme {
         ChatScreenContent(
             ChatScreenStates(
-                completions = null, true, null,
+                true, null,
                 chatLogs = mutableListOf(
                     Message("system", "You are a helpful assistant", LocalDateTime.now()),
                     Message(USER, "Hello my name is Jose", LocalDateTime.now()),

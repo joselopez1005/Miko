@@ -22,4 +22,9 @@ interface ChatDao {
     @Query("SELECT * FROM ChatMessageEntity")
     suspend fun getAllMessages(): List<ChatMessageEntity>
 
+    @Query("SELECT * FROM ChatMessageEntity WHERE time >= :time")
+    suspend fun getAllMessagesTimeRange(time: Long): List<ChatMessageEntity>
+
+    @Query("SELECT * FROM ChatMessageEntity WHERE role = :role ORDER BY time DESC LIMIT 1 ")
+    suspend fun getLatestPersonality(role: String): ChatMessageEntity?
 }

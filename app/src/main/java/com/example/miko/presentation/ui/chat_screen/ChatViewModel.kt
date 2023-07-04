@@ -19,23 +19,50 @@ class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository
 ): ViewModel() {
 
-    //val state = savedStateHandle.getStateFlow(STATE, ChatScreenStates())
-    //val state = MutableStateFlow(ChatScreenStates())
     var state by mutableStateOf(ChatScreenStates())
 
     init {
         getAllMessages()
+
     }
 
     fun onEvent(event: ChatScreenEvents) {
         when(event) {
             is ChatScreenEvents.OnSendMessage -> {
-                // Divide under 1000 to make it unix time
-                if (true) {
-                    state.chatLogs.add(Message(SYSTEM, "", LocalDateTime.now()))
-                }
                 state.chatLogs.add(Message(USER, event.message, LocalDateTime.now()))
                 sendMessage()
+            }
+
+            is ChatScreenEvents.DeleteAllMessages -> {
+                deleteAllMessages()
+            }
+        }
+    }
+
+    private fun setChatPersonality() {
+        viewModelScope.launch {
+            chatRepository.getLatestPersonality().collect { result ->
+                when (result) {
+                    is Resource.Success -> {
+                        state = state.copy(isLoading = false)
+                        result.data?.let {
+                            state.chatLogs.add(Message(it.messages.last().role, it.messages.last().content, LocalDateTime.now()))
+                            Log.d("ChatViewModel", "Personality: ${result.data.messages.last().content}")
+                            sendMessage()
+                            return@collect
+                        }
+                        state.chatLogs.add(Message("system", "I want you to act as an ascii artist. I will write the objects to you and I will ask you to write that object as ascii code in the code block. Write only ascii code. Do not explain about the object you wrote. I will say the objects in double quotes. My first object is \"cat\"", LocalDateTime.now()))
+                        sendMessage()
+                        Log.d("ChatViewModel", "Personality: ASCCIII")
+
+                    }
+                    is Resource.Error -> {
+                        state = state.copy(error = result.message ?: "Failed to set personality")
+                    }
+                    is Resource.Loading -> {
+                        state = state.copy(isLoading = result.isLoading)
+                    }
+                }
             }
         }
     }
@@ -45,14 +72,14 @@ class ChatViewModel @Inject constructor(
             chatRepository.sendMessageData(state.chatLogs).collect{ result ->
                 when(result) {
                     is Resource.Success -> {
-                        state = state.copy(completions = result.data, isLoading = false)
+                        state = state.copy(isLoading = false)
                         state.chatLogs.add(Message(result.data!!.messages.first().role, result.data.messages.first().content, result.data.messages.first().time))
                     }
                     is Resource.Error -> {
-                        state = state.copy(completions = null, isLoading = false, error = result.message)
+                        state = state.copy(isLoading = false, error = result.message)
                     }
                     is Resource.Loading -> {
-                        state = state.copy(completions = null, isLoading = result.isLoading)
+                        state = state.copy(isLoading = result.isLoading)
                     }
                 }
             }
@@ -65,23 +92,41 @@ class ChatViewModel @Inject constructor(
                 when(result) {
                     is Resource.Success -> {
                         Log.d("MessageResult", result.data?.messages?.size.toString())
-                        state = state.copy(completions = result.data)
                         result.data?.let{ data ->
                             data.messages.forEach {
                                 state.chatLogs.add(it)
                             }
                         }
+                        setChatPersonality()
                     }
                     is Resource.Error -> {
+                        state = state.copy(error = result.message)
                     }
                     is Resource.Loading -> {
+                        state = state.copy(isLoading = result.isLoading)
                     }
                 }
             }
         }
     }
 
-
+    private fun deleteAllMessages() {
+        viewModelScope.launch {
+            chatRepository.deleteAllMessages().collect { result ->
+                state = when (result) {
+                    is Resource.Success -> {
+                        state.copy(isLoading = false, error = null, chatLogs = mutableListOf())
+                    }
+                    is Resource.Error -> {
+                        state.copy(isLoading = false, error = result.message ?: "Failed to delete messages")
+                    }
+                    is Resource.Loading -> {
+                        state.copy(isLoading = result.isLoading)
+                    }
+                }
+            }
+        }
+    }
     companion object {
         const val USER = "user"
         const val ASSISTANT = "assistant"
