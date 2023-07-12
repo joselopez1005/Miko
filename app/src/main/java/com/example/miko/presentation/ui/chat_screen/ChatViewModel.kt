@@ -29,8 +29,10 @@ class ChatViewModel @Inject constructor(
     fun onEvent(event: ChatScreenEvents) {
         when(event) {
             is ChatScreenEvents.OnSendMessage -> {
-                state.chatLogs.add(Message(USER, event.message, LocalDateTime.now()))
-                sendMessage()
+                if (!state.isLoading) {
+                    state.chatLogs.add(Message(USER, event.message, LocalDateTime.now()))
+                    sendMessage()
+                }
             }
 
             is ChatScreenEvents.DeleteAllMessages -> {
@@ -51,7 +53,7 @@ class ChatViewModel @Inject constructor(
                             sendMessage()
                             return@collect
                         }
-                        state.chatLogs.add(Message("system", "I want you to act as an ascii artist. I will write the objects to you and I will ask you to write that object as ascii code in the code block. Write only ascii code. Do not explain about the object you wrote. I will say the objects in double quotes. My first object is \"cat\"", LocalDateTime.now()))
+                        state.chatLogs.add(Message("system", "You are a helpful assistant", LocalDateTime.now()))
                         sendMessage()
                         Log.d("ChatViewModel", "Personality: ASCCIII")
 
