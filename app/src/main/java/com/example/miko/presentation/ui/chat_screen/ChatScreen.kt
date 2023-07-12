@@ -2,10 +2,18 @@
 
 package com.example.miko.presentation.ui.chat_screen
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
@@ -110,10 +119,9 @@ fun ChatScreenContent(
         )
     }
 
-
     Scaffold(
         topBar = { TopBar(state = state, onButtonPressed = onButtonPressed, modifier = Modifier.fillMaxWidth())},
-        bottomBar = { BottomChatSection(onButtonPressed = onButtonPressed)}
+        bottomBar = { BottomChatSection(onButtonPressed = onButtonPressed, modifier = Modifier.fillMaxWidth())}
     ) { contentPadding ->
         Column(modifier = Modifier
             .fillMaxSize()
@@ -208,7 +216,6 @@ fun ChatMessageSection(
 
     LazyColumn(
         state = listState,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .background(
@@ -230,6 +237,7 @@ fun ChatMessageSection(
                             modifier = Modifier
                                 .align(Alignment.CenterEnd)
                                 .fillMaxWidth(.9f)
+                                .padding(vertical = 10.dp)
                         )
                     }
 
@@ -259,6 +267,21 @@ fun ChatMessageSection(
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+        item {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                if (state.isLoading) {
+                    MessageBubble(
+                        message = "Loading",
+                        time = LocalDateTime.now(),
+                        sender = ASSISTANT,
+                        isLoading = true,
+                        modifier = Modifier
+                            .fillMaxWidth(.9f)
+                            .align(Alignment.CenterStart)
+                    )
+                }
+            }
+        }
     }
     LaunchedEffect(state.chatLogs.size) {
         if (state.chatLogs.size > 1) {
@@ -280,7 +303,7 @@ fun BottomChatSection(
     Column(modifier) {
         Divider(thickness = 1.dp)
         Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
@@ -301,7 +324,8 @@ fun BottomChatSection(
                     unfocusedIndicatorColor = Color.Transparent,
                     disabledIndicatorColor = Color.Transparent,
                     containerColor = MaterialTheme.colorScheme.secondary,
-                    textColor = Color.Black
+                    textColor = MaterialTheme.colorScheme.onSecondary,
+                    cursorColor = MaterialTheme.colorScheme.onSecondary
                 ),
                 leadingIcon = {
                     Row(
@@ -328,7 +352,7 @@ fun BottomChatSection(
                     }
                 },
                 modifier = Modifier
-                    .width(320.dp)
+                    .weight(.7f)
                     .clip(Shapes.extraLarge)
             )
 
@@ -339,7 +363,7 @@ fun BottomChatSection(
                 modifier = Modifier.clickable {
                     onButtonPressed.invoke(ChatScreenEvents.OnSendMessage(textState.value.text))
                     textState.value = TextFieldValue()
-                }
+                }.weight(.1f)
             )
         }
     }
@@ -350,6 +374,7 @@ fun MessageBubble(
     message: String,
     time: LocalDateTime,
     sender: String,
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val isUser = sender == USER
@@ -361,21 +386,33 @@ fun MessageBubble(
         verticalArrangement = Arrangement.SpaceEvenly,
         modifier = modifier
     ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (isUser) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary,
-            textAlign = if (isUser) TextAlign.End else TextAlign.Start,
-            modifier = Modifier
-                .clip
-                    (
-                    if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
+        Box(modifier = Modifier
+            .clip
+                (
+                if (isUser) MessageBubbleShapeUser else MessageBubbleShapeAssistant
+            )
+            .background(if (isUser) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .clickable(indication = null,
+                interactionSource = remember { MutableInteractionSource() }) {
+                isTimeShown.value = !isTimeShown.value
+            }
+            .align(if (isUser) Alignment.End else Alignment.Start)) {
+            if (isLoading) {
+                ThreeDotLoadingAnimation(
+                    Modifier.padding(bottom = 14.dp, start = 14.dp, end = 14.dp)
+                        .width(40.dp)
+                        .height(10.dp)
                 )
-                .background(if (isUser) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary)
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-                .clickable { isTimeShown.value = !isTimeShown.value }
-                .align(if (isUser) Alignment.End else Alignment.Start)
-        )
+            } else {
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (isUser) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary,
+                    textAlign = if (isUser) TextAlign.End else TextAlign.Start,
+                )
+            }
+        }
 
         if (isTimeShown.value) {
             Text(
@@ -390,6 +427,74 @@ fun MessageBubble(
         }
     }
 
+}
+
+@Composable
+fun ThreeDotLoadingAnimation(
+    modifier: Modifier = Modifier
+) {
+    // Define the dot colors
+    val dotColors = listOf(MaterialTheme.colorScheme.onSecondary, MaterialTheme.colorScheme.onSecondary, MaterialTheme.colorScheme.onSecondary)
+
+    // Define the animated values for each dot's position and scale
+    val transition = rememberInfiniteTransition()
+    val dot1Offset by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 40f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1000
+                0f at 0 with FastOutSlowInEasing
+                20f at 500 with FastOutSlowInEasing
+                0f at 1000
+            },
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+    val dot2Offset by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 40f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1000
+                0f at 0
+                0f at 500
+                20f at 1000 with FastOutSlowInEasing
+            },
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+    val dot3Offset by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 40f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1000
+                20f at 0 with FastOutSlowInEasing
+                0f at 500
+                0f at 1000
+            },
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    // Define the dot radius and spacing
+    val dotRadius = 20f
+    val dotSpacing = 55f
+
+    Canvas(modifier = modifier) {
+        // Draw the three dots
+        dotColors.forEachIndexed { index, color ->
+            val x = (index * dotSpacing)
+            val y = when (index) {
+                0 -> 40f - dot1Offset
+                1 -> 40f - dot2Offset
+                2 -> 40f - dot3Offset
+                else -> 40f
+            }
+            drawCircle(color, radius = dotRadius, center = Offset(x, y))
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
