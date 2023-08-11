@@ -13,18 +13,24 @@ interface ChatDao {
         chatMessage: ChatMessageEntity
     )
 
-    @Query("DELETE FROM ChatMessageEntity")
-    suspend fun deleteChatMessage()
+    @Query("DELETE FROM ChatMessageEntity WHERE chatId=:chatId")
+    suspend fun deleteChatMessage(chatId: Int)
 
-    @Query("SELECT * FROM ChatMessageEntity ORDER BY id DESC LIMIT 1")
-    suspend fun selectLatestMessage(): ChatMessageEntity
+    @Query("SELECT * FROM ChatMessageEntity WHERE chatId = :chatId ORDER BY id DESC LIMIT 1")
+    suspend fun selectLatestMessage(chatId: Int): ChatMessageEntity
 
-    @Query("SELECT * FROM ChatMessageEntity")
-    suspend fun getAllMessages(): List<ChatMessageEntity>
+    @Query("SELECT * FROM ChatMessageEntity WHERE chatId = :chatId")
+    suspend fun getAllMessages(chatId: Int): List<ChatMessageEntity>
 
-    @Query("SELECT * FROM ChatMessageEntity WHERE time >= :time")
-    suspend fun getAllMessagesTimeRange(time: Long): List<ChatMessageEntity>
+    @Query("SELECT * FROM ChatMessageEntity WHERE time >= :time AND chatId = :chatId")
+    suspend fun getAllMessagesTimeRange(chatId: Int, time: Long): List<ChatMessageEntity>
 
-    @Query("SELECT * FROM ChatMessageEntity WHERE role = :role ORDER BY time DESC LIMIT 1 ")
-    suspend fun getLatestPersonality(role: String): ChatMessageEntity?
+    @Query("SELECT * FROM ChatMessageEntity WHERE role = :role AND chatId = :chatId ORDER BY time DESC LIMIT 1 ")
+    suspend fun getLatestPersonality(chatId: Int, role: String): ChatMessageEntity?
+
+    @Query("SELECT MAX(chatId) FROM ChatMessageEntity")
+    suspend fun getNumberOfChats(): Int
+
+    @Query("SELECT * FROM ChatMessageEntity WHERE chatId = :chatId ORDER BY time DESC LIMIT 1")
+    suspend fun getLatestMessage(chatId: Int): ChatMessageEntity
 }

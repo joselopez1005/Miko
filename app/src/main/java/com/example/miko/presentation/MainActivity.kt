@@ -11,9 +11,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.miko.presentation.ui.chat_screen.ChatScreen
 import com.example.miko.presentation.ui.theme.MikoTheme
 import com.example.miko.presentation.ui.chat_screen.ChatViewModel
+import com.example.miko.presentation.ui.home_screen.HomeScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ChatScreen()
+                    HomeScreen()
                 }
             }
         }
