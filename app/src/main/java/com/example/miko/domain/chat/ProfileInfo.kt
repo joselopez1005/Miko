@@ -4,5 +4,6 @@ import androidx.annotation.DrawableRes
 
 data class ProfileInfo(
     val name: String,
-    @DrawableRes val iconRes: Int
+    @DrawableRes val iconRes: Int,
+    val chatId: Int
 )

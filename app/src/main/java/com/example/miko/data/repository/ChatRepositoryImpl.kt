@@ -13,6 +13,7 @@ import com.example.miko.data.remote.PromptBody
 import com.example.miko.domain.chat.ChatItem
 import com.example.miko.domain.chat.Completions
 import com.example.miko.domain.chat.Message
+import com.example.miko.domain.chat.ProfileInfo
 import com.example.miko.domain.repository.ChatRepository
 import com.example.miko.domain.util.Resource
 import kotlinx.coroutines.flow.Flow
@@ -32,21 +33,21 @@ class ChatRepositoryImpl @Inject constructor(
     private val dao = db.dao
      override suspend fun sendMessageData(
         messages: List<Message>,
-        chatId: Int
+        profileInfo: ProfileInfo
     ): Flow<Resource<Completions>> {
         return flow {
             emit(Resource.Loading(true))
 
-            dao.insertChatMessage(messages.last().toChatMessageEntity(chatId)) // Storing user message
+            dao.insertChatMessage(messages.last().toChatMessageEntity(profileInfo)) // Storing user message
 
             val sendMessage = try {
                 val validMessageTime = LocalDateTime.now().minusHours(5).toEpochSecond(
                     ZoneOffset.systemDefault().rules.getOffset(
                         LocalDateTime.now()))
-                Log.d("ChatRepository", "ValidMessageTime = $validMessageTime \n CurrentMessageTime = ${messages.last().toChatMessageEntity(chatId).time}")
+                Log.d("ChatRepository", "ValidMessageTime = $validMessageTime \n CurrentMessageTime = ${messages.last().toChatMessageEntity(profileInfo).time}")
                 openApi.getTextCompletion(
                     "Bearer ${BuildConfig.OPEN_API_KEY}",
-                    PromptBody(MODEL, dao.getAllMessagesTimeRange(chatId, validMessageTime).map { MessageBody(it.role, it.content) }, 1)
+                    PromptBody(MODEL, dao.getAllMessagesTimeRange(profileInfo.chatId, validMessageTime).map { MessageBody(it.role, it.content) }, 1)
                 )
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -58,9 +59,9 @@ class ChatRepositoryImpl @Inject constructor(
             if (messages.last().role != "system") {
                 // Storing AI message
                 sendMessage?.let { message ->
-                    dao.insertChatMessage(message.toChatMessageEntity(chatId))
+                    dao.insertChatMessage(message.toChatMessageEntity(profileInfo))
                     emit(Resource.Success(
-                        data = dao.selectLatestMessage(chatId).toCompletions()
+                        data = dao.selectLatestMessage(profileInfo.chatId).toCompletions()
                     ))
                 }
             }
@@ -69,28 +70,28 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getMessageData(chatId: Int): Flow<Resource<Completions>> {
+    override suspend fun getMessageData(profileInfo: ProfileInfo): Flow<Resource<Completions>> {
         return flow {
             emit(Resource.Loading(true))
-            val listOfMessages = dao.getAllMessages(chatId).map { it.toMessage() }
+            val listOfMessages = dao.getAllMessages(profileInfo.chatId).map { it.toMessage() }
             emit(Resource.Success(Completions(listOfMessages)))
             emit(Resource.Loading(false))
         }
     }
 
-    override suspend fun getLatestPersonality(chatId: Int): Flow<Resource<Completions?>> {
+    override suspend fun getLatestPersonality(profileInfo: ProfileInfo): Flow<Resource<Completions?>> {
         return flow {
             emit(Resource.Loading(true))
-            val latestPersonality = dao.getLatestPersonality(chatId, "system")?.toCompletions()
+            val latestPersonality = dao.getLatestPersonality(profileInfo.chatId, "system")?.toCompletions()
             emit(Resource.Success(latestPersonality))
             emit(Resource.Loading(false))
         }
     }
 
-    override suspend fun deleteAllMessages(chatId: Int): Flow<Resource<Boolean>> {
+    override suspend fun deleteAllMessages(profileInfo: ProfileInfo): Flow<Resource<Boolean>> {
         return flow {
             emit(Resource.Loading(true))
-            dao.deleteChatMessage(chatId)
+            dao.deleteChatMessage(profileInfo.chatId)
             emit(Resource.Loading(false))
             emit(Resource.Success(true))
         }
@@ -99,9 +100,14 @@ class ChatRepositoryImpl @Inject constructor(
     override suspend fun getAmountOfChats(): Flow<Resource<Int>> {
         return flow {
             emit(Resource.Loading(true))
-            val amount = dao.getNumberOfChats()
-            emit(Resource.Loading(false))
-            emit(Resource.Success(amount))
+            try {
+                val amount:Int = dao.getNumberOfChats()
+                emit(Resource.Loading(false))
+                emit(Resource.Success(amount))
+            } catch (e: Exception) {
+                emit(Resource.Loading(false))
+                emit(Resource.Error("No chats found"))
+            }
         }
     }
 

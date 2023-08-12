@@ -43,7 +43,7 @@ class ChatViewModel @Inject constructor(
 
     private fun setChatPersonality() {
         viewModelScope.launch {
-            chatRepository.getLatestPersonality(state.chatId).collect { result ->
+            chatRepository.getLatestPersonality(state.chatProfile).collect { result ->
                 when (result) {
                     is Resource.Success -> {
                         state = state.copy(isLoading = false)
@@ -71,7 +71,7 @@ class ChatViewModel @Inject constructor(
 
     private fun sendMessage() {
         viewModelScope.launch {
-            chatRepository.sendMessageData(state.chatLogs, state.chatId).collect{ result ->
+            chatRepository.sendMessageData(state.chatLogs, state.chatProfile).collect{ result ->
                 when(result) {
                     is Resource.Success -> {
                         state = state.copy(isLoading = false)
@@ -90,7 +90,7 @@ class ChatViewModel @Inject constructor(
 
     private fun getAllMessages() {
         viewModelScope.launch {
-            chatRepository.getMessageData(state.chatId).collect { result ->
+            chatRepository.getMessageData(state.chatProfile).collect { result ->
                 when(result) {
                     is Resource.Success -> {
                         Log.d("MessageResult", result.data?.messages?.size.toString())
@@ -114,7 +114,7 @@ class ChatViewModel @Inject constructor(
 
     private fun deleteAllMessages() {
         viewModelScope.launch {
-            chatRepository.deleteAllMessages(state.chatId).collect { result ->
+            chatRepository.deleteAllMessages(state.chatProfile).collect { result ->
                 state = when (result) {
                     is Resource.Success -> {
                         state.copy(isLoading = false, error = null, chatLogs = mutableListOf())

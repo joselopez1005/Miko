@@ -8,6 +8,10 @@ import androidx.room.PrimaryKey
 data class ChatMessageEntity (
     @ColumnInfo(name = "role")
     val role: String,
+    @ColumnInfo(name = "name")
+    val name: String,
+    @ColumnInfo(name = "profilePictureRef")
+    val profilePictureRef: Int,
     @ColumnInfo(name = "content")
     val content: String,
     @ColumnInfo(name = "time")

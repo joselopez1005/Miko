@@ -9,8 +9,7 @@ import java.time.LocalDateTime
 data class ChatScreenStates (
     val isLoading: Boolean = false,
     var error: String? = null,
-    val chatId:Int = 1,
-    val chatProfile: ProfileInfo = ProfileInfo("Miko", R.drawable.ic_morgana),
+    val chatProfile: ProfileInfo = ProfileInfo("Miko", R.drawable.ic_morgana, 2),
     val chatLogs: MutableList<Message> = mutableListOf(Message("system", "You are a helpful assistant", LocalDateTime.now())),
 
     ) : Serializable
